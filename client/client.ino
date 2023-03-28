@@ -18,10 +18,7 @@ const char* serverName = "http://10.0.0.21/motion";
 // the following variables are unsigned longs because the time, measured in
 // milliseconds, will quickly become a bigger number than can be stored in an int.
 unsigned long lastTime = 0;
-// Timer set to 10 minutes (600000)
-//unsigned long timerDelay = 600000;
-// Set timer to 5 seconds (5000)
-unsigned long timerDelay = 5 * 1000;
+unsigned long timerDelay = 2 * 1000;
 
 String sensorReadings;
 int BUTTON_1 = 0;
@@ -51,49 +48,42 @@ void setup() {
   xTaskCreate(read_button_2, "Read Button 2", 2000, NULL, 1, NULL);
 }
 
-void checkConnections()
-{
-  if ( WiFi.status() != WL_CONNECTED )
-  {
+void checkConnections() {
+  if (WiFi.status() != WL_CONNECTED) {
     setup_WiFi();
   }
 }
 
-void setup_WiFi()
-{
-  tft.fillScreen( TFT_RED );
-  tft.setTextColor( TFT_BLACK, TFT_RED );
+void setup_WiFi() {
+  tft.fillScreen(TFT_RED);
+  tft.setTextColor(TFT_BLACK, TFT_RED);
+  tft.drawString("Joining Network", 50, 10, 4);
+  tft.drawString(ssid, 80, 80, 4);
   Serial.println();
   Serial.print("Connecting to ");
-  Serial.println( ssid );
-  while ( WiFi.status() != WL_CONNECTED )
-  {
-    WiFi.begin( ssid, password);         //  07/08/2021  WiFi crashed, may have been stuck in a loop.
-    delay( 5000 );                      //  2000 is not enough but 3000 is.
-    Serial.println(".");
+  Serial.println(ssid);
+  while (WiFi.status() != WL_CONNECTED) {
+    WiFi.begin(ssid, password);  //  07/08/2021  WiFi crashed, may have been stuck in a loop.
+    delay(5000);                 //  2000 is not enough but 3000 is.
+    Serial.println("2");
   }
-  
-  if ( WiFi.status() == WL_CONNECTED )
-  {
+
+  if (WiFi.status() == WL_CONNECTED) {
+    IPAddress broadCast = WiFi.localIP();
     Serial.println("");
     Serial.println("WiFi connected");
     Serial.println("IP address: ");
     Serial.println(WiFi.localIP());
-    IPAddress broadCast = WiFi.localIP();
-    Serial.println( broadCast );
-    tft.setTextColor( TFT_WHITE, TFT_BLACK );
-    tft.fillScreen( TFT_GREEN );
+    Serial.println(broadCast);
+    tft.fillScreen(TFT_GREEN);
+    tft.setTextColor(TFT_WHITE, TFT_BLACK);
     tft.drawString("WiFi", 60, 0, 4);
     tft.drawString(IpAddress2String(broadCast), 0, 50, 4);
   }
 }
 
-String IpAddress2String(const IPAddress& ipAddress)
-{
-  return String(ipAddress[0]) + String(".") +\
-  String(ipAddress[1]) + String(".") +\
-  String(ipAddress[2]) + String(".") +\
-  String(ipAddress[3])  ; 
+String IpAddress2String(const IPAddress& ipAddress) {
+  return String(ipAddress[0]) + String(".") + String(ipAddress[1]) + String(".") + String(ipAddress[2]) + String(".") + String(ipAddress[3]);
 }
 
 void read_button_1(void* parameter) {
@@ -103,7 +93,6 @@ void read_button_1(void* parameter) {
       tft.setTextColor(TFT_BLUE, TFT_GREEN);
       tft.drawString("Waiting for Motion", 40, 20, 4);
       Serial.println("Button 1 Pressed!");
-      delay(3000);
     }
     vTaskDelay(POLL_INTERVAL / portTICK_PERIOD_MS);
   }
@@ -116,7 +105,6 @@ void read_button_2(void* parameter) {
       tft.setTextColor(TFT_BLUE, TFT_GREEN);
       tft.drawString("Waiting for Motion", 50, 20, 4);
       Serial.println("Button 2 Pressed!");
-      delay(3000);
     }
     vTaskDelay(POLL_INTERVAL / portTICK_PERIOD_MS);
   }
@@ -126,39 +114,30 @@ void loop() {
   int lapse = millis() - lastTime;
   Serial.print("lapse = ");
   Serial.println(lapse);
-  checkConnections();
-
-  if (lapse > timerDelay)
-  {
+  if (lapse > timerDelay) {
     lastTime = millis();
-    
-    if (WiFi.status() == WL_CONNECTED)
-    {
-      sensorReadings = httpGETRequest(serverName);
-      Serial.println(sensorReadings);
-      JSONVar myObject = JSON.parse(sensorReadings);
-      Serial.print("json=");
-      Serial.println(myObject);
+    checkConnections();
 
-      for (int i = 0; i < myObject.length(); i++)
-      {
-        int value_int = myObject[i]["value"];
-        String value_s = String(value_int);
-        Serial.print("value=");
-        Serial.println(value_s);
-        tft.fillScreen(TFT_BLACK);
-        tft.setTextColor(TFT_RED, TFT_BLACK);
-        tft.drawString("MOTION  ALERT", 55, 30, 4);
-        tft.drawString(value_s, 100, 90, 8);
-        Serial.println(myObject[i]["time"]);
-        Serial.println(myObject[i]["type"]);
-        Serial.println(myObject[i]["value"]);
-        Serial.println(myObject[i]["unit"]);
-        delay(5000);
-      }
-      delay(2000);
-    } else {
-      Serial.println("WiFi Disconnected");
+    sensorReadings = httpGETRequest(serverName);
+    Serial.println(sensorReadings);
+    JSONVar myObject = JSON.parse(sensorReadings);
+    Serial.print("json=");
+    Serial.println(myObject);
+
+    for (int i = 0; i < myObject.length(); i++) {
+      int value_int = myObject[i]["value"];
+      String value_s = String(value_int);
+      Serial.print("value=");
+      Serial.println(value_s);
+      tft.fillScreen(TFT_BLACK);
+      tft.setTextColor(TFT_RED, TFT_BLACK);
+      tft.drawString("MOTION  ALERT", 55, 30, 4);
+      tft.drawString(value_s, 100, 90, 8);
+      Serial.println(myObject[i]["time"]);
+      Serial.println(myObject[i]["type"]);
+      Serial.println(myObject[i]["value"]);
+      Serial.println(myObject[i]["unit"]);
+      delay(5000);
     }
   }
   delay(1000);
@@ -168,12 +147,12 @@ String httpGETRequest(const char* serverName) {
   WiFiClient client;
   HTTPClient http;
   http.begin(client, serverName);
+  delay(2000);
   int httpResponseCode = http.GET();
   Serial.print("httpResponseCode=");
   Serial.println(httpResponseCode);
   String payload = "{}";
-  if (httpResponseCode > 0)
-  {
+  if (httpResponseCode > 0) {
     Serial.print("HTTP Response code: ");
     Serial.println(httpResponseCode);
     payload = http.getString();
