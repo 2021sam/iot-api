@@ -46,6 +46,7 @@ void setup() {
 
   xTaskCreate(read_button_1, "Read Button 1", 2000, NULL, 1, NULL);
   xTaskCreate(read_button_2, "Read Button 2", 2000, NULL, 1, NULL);
+  // xTaskCreate()
 }
 
 void checkConnections() {
