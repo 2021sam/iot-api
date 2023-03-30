@@ -10,11 +10,13 @@ TFT_eSPI tft = TFT_eSPI();
 
 #include <WiFi.h>
 #include <HTTPClient.h>
-#include <Arduino_JSON.h>
+// #include <Arduino_JSON.h>
+#include <ArduinoJson.h>
 const char* ssid = "Hunter";
 const char* password = "saturday";
 //Your Domain name with URL path or IP address with path
 const char* serverName = "http://10.0.0.21/motion";
+const char* serverCAP = "http://10.0.0.124:9009/alive";
 // the following variables are unsigned longs because the time, measured in
 // milliseconds, will quickly become a bigger number than can be stored in an int.
 unsigned long lastTime = 0;
@@ -46,7 +48,8 @@ void setup() {
 
   xTaskCreate(read_button_1, "Read Button 1", 2000, NULL, 1, NULL);
   xTaskCreate(read_button_2, "Read Button 2", 2000, NULL, 1, NULL);
-  // xTaskCreate()
+  xTaskCreate(check_motion, "Check IOT motion", 8000, NULL, 1, NULL);  // Needs to be above 4000
+  // xTaskCreate(check_CAP, "Check Control Accounts Payable", 8000, NULL, 1, NULL);
 }
 
 void checkConnections() {
@@ -58,15 +61,15 @@ void checkConnections() {
 void setup_WiFi() {
   tft.fillScreen(TFT_RED);
   tft.setTextColor(TFT_BLACK, TFT_RED);
-  tft.drawString("Joining Network", 50, 10, 4);
-  tft.drawString(ssid, 80, 80, 4);
+  tft.drawString("Joining Network", 60, 10, 4);
+  tft.drawString(ssid, 90, 80, 4);
   Serial.println();
   Serial.print("Connecting to ");
   Serial.println(ssid);
   while (WiFi.status() != WL_CONNECTED) {
     WiFi.begin(ssid, password);  //  07/08/2021  WiFi crashed, may have been stuck in a loop.
     delay(5000);                 //  2000 is not enough but 3000 is.
-    Serial.println("2");
+    Serial.println("3");
   }
 
   if (WiFi.status() == WL_CONNECTED) {
@@ -78,8 +81,8 @@ void setup_WiFi() {
     Serial.println(broadCast);
     tft.fillScreen(TFT_GREEN);
     tft.setTextColor(TFT_WHITE, TFT_BLACK);
-    tft.drawString("WiFi", 60, 0, 4);
-    tft.drawString(IpAddress2String(broadCast), 0, 50, 4);
+    tft.drawString("WiFi", 100, 0, 4);
+    tft.drawString(IpAddress2String(broadCast), 80, 50, 4);
   }
 }
 
@@ -111,38 +114,64 @@ void read_button_2(void* parameter) {
   }
 }
 
-void loop() {
-  int lapse = millis() - lastTime;
-  Serial.print("lapse = ");
-  Serial.println(lapse);
-  if (lapse > timerDelay) {
-    lastTime = millis();
-    checkConnections();
+void check_motion(void* parameter) {
+  while (true) {
+    int lapse = millis() - lastTime;
+    Serial.print("lapse = ");
+    Serial.println(lapse);
+    if (lapse > timerDelay) {
+      lastTime = millis();
+      checkConnections();
 
-    sensorReadings = httpGETRequest(serverName);
-    Serial.println(sensorReadings);
-    JSONVar myObject = JSON.parse(sensorReadings);
-    Serial.print("json=");
-    Serial.println(myObject);
+      String json = httpGETRequest(serverName);
+      Serial.println(json);
+      DynamicJsonDocument doc(1024);
+      deserializeJson(doc, json);
 
-    for (int i = 0; i < myObject.length(); i++) {
-      int value_int = myObject[i]["value"];
-      String value_s = String(value_int);
-      Serial.print("value=");
-      Serial.println(value_s);
-      tft.fillScreen(TFT_BLACK);
-      tft.setTextColor(TFT_RED, TFT_BLACK);
-      tft.drawString("MOTION  ALERT", 55, 30, 4);
-      tft.drawString(value_s, 100, 90, 8);
-      Serial.println(myObject[i]["time"]);
-      Serial.println(myObject[i]["type"]);
-      Serial.println(myObject[i]["value"]);
-      Serial.println(myObject[i]["unit"]);
+      for (JsonObject elem : doc.as<JsonArray>()) {
+        const char* time_c = elem["time"];
+        String value_s = elem["value"];
+        int value_i = elem["value"];
+
+        tft.fillScreen(TFT_BLACK);
+        tft.setTextColor(TFT_RED, TFT_BLACK);
+        tft.drawString("MOTION  ALERT", 55, 10, 4);
+        tft.drawString(value_s, 100, 50, 8);
+        tft.drawString(time_c, 20, 150, 2);
+                // tft.drawString(time_c, 0, 80, 3);
+      }
       delay(5000);
     }
+
+
+    // JsonObject obj = doc.as<JsonArray>();
+
+    //  String alive_string = obj["alive"].as<String>();
+    //  bool alive_bool = obj["alive"].as<bool>();
+
+    // JSONVar myObject = JSON.parse(sensorReadings);
+    // Serial.print("json=");
+    // Serial.println(myObject);
+
+    // for (int i = 0; i < obj.length(); i++) {
+    //   int value_int = obj[i]["value"];
+    //   String value_s = String(value_int);
+    //   Serial.print("value=");
+    //   Serial.println(value_s);
+    //   tft.fillScreen(TFT_BLACK);
+    //   tft.setTextColor(TFT_RED, TFT_BLACK);
+    //   tft.drawString("MOTION  ALERT", 55, 30, 4);
+    //   tft.drawString(value_s, 100, 90, 8);
+    //   // Serial.println(myObject[i]["time"]);
+    //   // Serial.println(myObject[i]["type"]);
+    //   // Serial.println(myObject[i]["value"]);
+    //   // Serial.println(myObject[i]["unit"]);
+    //   delay(5000);
+    // }
   }
-  delay(1000);
+  vTaskDelay(1000);
 }
+
 
 String httpGETRequest(const char* serverName) {
   WiFiClient client;
@@ -163,4 +192,80 @@ String httpGETRequest(const char* serverName) {
   }
   http.end();
   return payload;
+}
+
+void loop() {}
+
+void check_CAP(void* parameter) {
+  while (true) {
+    checkConnections();
+    char HOST_NAME[] = "10.0.0.124";
+    bool alive = client_alive(HOST_NAME);
+    if (alive) {
+      tft.fillScreen(TFT_GREEN);
+      tft.setTextColor(TFT_BLUE, TFT_GREEN);
+      tft.drawString("CAP  ALIVE", 90, 30, 4);
+      // tft.drawString(value_s, 100, 90, 8);
+      String json = httpGETRequest(serverCAP);
+      DynamicJsonDocument doc(1024);
+      Serial.println(json);
+      deserializeJson(doc, json);
+      JsonObject obj = doc.as<JsonObject>();
+      //  String alive_string = obj["alive"].as<String>();
+      //  bool alive_bool = obj["alive"].as<bool>();
+      String alive_string = obj["alive"];
+      boolean alive_bool = obj["alive"];
+      Serial.println(obj);
+      Serial.print("alive=");
+      Serial.println(alive_string);
+      Serial.println(alive_bool);
+    } else {
+      tft.fillScreen(TFT_RED);
+      tft.setTextColor(TFT_BLUE, TFT_RED);
+      tft.drawString("CAP  OFF  LINE", 50, 30, 4);
+    }
+
+
+    // JSONVar myObject = JSON.parse(response);
+    // Serial.print("json=");
+    // Serial.println(myObject);
+    // Serial.println(response);
+    // Serial.println(response.keys());
+
+    // Serial.print( myObject.length() );
+
+    // for (int i = 0; i < myObject.length(); i++) {
+    //   bool value_bool = myObject[i]["alive"];
+    //   String value_s = String(value_bool);
+    //   Serial.print("value=");
+    //   Serial.println(value_s);
+    //   tft.fillScreen(TFT_BLACK);
+    //   tft.setTextColor(TFT_RED, TFT_BLACK);
+    //   tft.drawString("CAP  ALERT", 55, 30, 4);
+    //   tft.drawString(value_s, 100, 90, 8);
+    //   // Serial.println(myObject[i]["time"]);
+    //   // Serial.println(myObject[i]["type"]);
+    //   // Serial.println(myObject[i]["value"]);
+    //   // Serial.println(myObject[i]["unit"]);
+    //   delay(5000);
+    // }
+
+    vTaskDelay(20 * 1000);
+  }
+}
+
+
+
+
+bool client_alive(const char* HOST_NAME) {
+  WiFiClient client;
+  if (client.connect(HOST_NAME, 80)) {
+    Serial.println("Connected to CAP server");
+    client.stop();
+    return true;
+  } else {
+    Serial.println("Connection to CAP server - Failed !");
+    client.stop();
+    return false;
+  }
 }
