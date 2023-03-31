@@ -28,6 +28,7 @@ int BUTTON_2 = 14;
 void IRAM_ATTR toggleButton1();
 void IRAM_ATTR toggleButton2();
 int POLL_INTERVAL = 100;
+bool ALERT = false;
 
 void setup() {
   pinMode(BUTTON_1, INPUT_PULLUP);
@@ -58,7 +59,8 @@ void checkConnections() {
   }
 }
 
-void setup_WiFi() {
+void setup_WiFi()
+{
   tft.fillScreen(TFT_RED);
   tft.setTextColor(TFT_BLACK, TFT_RED);
   tft.drawString("Joining Network", 60, 10, 4);
@@ -66,7 +68,8 @@ void setup_WiFi() {
   Serial.println();
   Serial.print("Connecting to ");
   Serial.println(ssid);
-  while (WiFi.status() != WL_CONNECTED) {
+  while (WiFi.status() != WL_CONNECTED)
+  {
     WiFi.begin(ssid, password);  //  07/08/2021  WiFi crashed, may have been stuck in a loop.
     delay(5000);                 //  2000 is not enough but 3000 is.
   }
@@ -92,6 +95,7 @@ String IpAddress2String(const IPAddress& ipAddress) {
 void read_button_1(void* parameter) {
   for (;;) {
     if (digitalRead(BUTTON_1) == 0) {
+      ALERT = false;
       tft.fillScreen(TFT_BLUE);
       tft.setTextColor(TFT_BLUE, TFT_GREEN);
       tft.drawString("Waiting for Motion", 40, 20, 4);
@@ -104,6 +108,7 @@ void read_button_1(void* parameter) {
 void read_button_2(void* parameter) {
   for (;;) {
     if (digitalRead(BUTTON_2) == 0) {
+      ALERT = false;
       tft.fillScreen(TFT_BLUE);
       tft.setTextColor(TFT_BLUE, TFT_GREEN);
       tft.drawString("Waiting for Motion", 50, 20, 4);
@@ -114,7 +119,7 @@ void read_button_2(void* parameter) {
 }
 
 void check_motion(void* parameter) {
-  while (true) {
+  while (!ALERT) {
     int lapse = millis() - lastTime;
     Serial.print("lapse = ");
     Serial.println(lapse);
@@ -128,6 +133,7 @@ void check_motion(void* parameter) {
       deserializeJson(doc, json);
 
       for (JsonObject elem : doc.as<JsonArray>()) {
+        ALERT = true;
         const char* time_c = elem["time"];
         String value_s = elem["value"];
         int value_i = elem["value"];
@@ -168,12 +174,11 @@ String httpGETRequest(const char* serverName) {
 void loop() {}
 
 void check_CAP(void* parameter) {
-  while (true) {
+  while (!ALERT) {
     checkConnections();
     char HOST_NAME[] = "10.0.0.11";
     bool alive = server_alive(HOST_NAME);
-    if (alive)
-    {
+    if (alive) {
       tft.fillScreen(TFT_GREEN);
       tft.setTextColor(TFT_BLUE, TFT_GREEN);
       tft.drawString("CAP  ALIVE", 90, 30, 4);
@@ -193,11 +198,11 @@ void check_CAP(void* parameter) {
       // Serial.println(alive_string);
       // Serial.println(alive_bool);
     } else {
+      ALERT = true;
       tft.fillScreen(TFT_RED);
       tft.setTextColor(TFT_BLUE, TFT_RED);
       tft.drawString("CAP  OFF  LINE", 50, 30, 4);
     }
-
     vTaskDelay(60 * 1000);
   }
 }
