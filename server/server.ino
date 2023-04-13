@@ -61,7 +61,6 @@ char buffer[34000];
 float temperature;
 float humidity;
 float pressure;
-String printLocalTime();
 void setup_task();
 void getMenu();
 void getData();
@@ -135,18 +134,11 @@ void setup() {
   // while (!Serial);
   Serial.print("Connecting to Wi-Fi");
   WiFi.begin(SSID, PWD);
-  // int t = 0;
   while (WiFi.status() != WL_CONNECTED) {
-    // Serial.print(t);
     delay(5000);
-    // t += 1;
-    // Init and get the time
-    configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
-    printLocalTime();
-  }
+    }
 
   configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
-  printLocalTime();
   Serial.print("Connected! IP Address: ");
   Serial.println(WiFi.localIP());
   xTaskCreate(read_sensor_data, "Read sensor data", 2000, NULL, 2, NULL);
@@ -254,7 +246,7 @@ void add_json_object(char *tag, float value, char *unit) {
     jsonDocument_1.remove(0);
   }
   JsonObject objt = jsonDocument_1.createNestedObject();
-  objt["time"] = printLocalTime();
+  objt["time"] = get_time();
   objt["type"] = tag;
   objt["value"] = value;
   objt["unit"] = unit;
@@ -267,7 +259,7 @@ void add_json_object_2(char *tag, float value, char *unit) {
     jsonDocument_2.remove(0);
   }
   JsonObject objt = jsonDocument_2.createNestedObject();
-  objt["time"] = printLocalTime();
+  objt["time"] = git_time();
   objt["type"] = tag;
   objt["value"] = value;
   objt["unit"] = unit;
@@ -360,24 +352,6 @@ void loop() {
 }
 
 
-String printLocalTime() {
-  struct tm timeinfo;
-  if (!getLocalTime(&timeinfo)) {
-    Serial.println("Failed to obtain time");
-    return "Error";
-  }
-  //  Serial.println(&timeinfo, "print - %A, %B %d %Y %H:%M:%S");
-  //https://arduino.stackexchange.com/questions/52676/how-do-you-convert-a-formatted-print-statement-into-a-string-variable
-  char timeStringBuff[50];  //50 chars should be enough
-  strftime(timeStringBuff, sizeof(timeStringBuff), "%A, %B %d %Y %H:%M:%S", &timeinfo);
-  //print like "const char*"
-  //  Serial.println(timeStringBuff);
-  //Optional: Construct String object
-  String asString(timeStringBuff);
-  return asString;
-}
-
-
 String get_time() {
   struct tm timeinfo;
   if (!getLocalTime(&timeinfo)) {
@@ -385,13 +359,10 @@ String get_time() {
     return "Error";
   }
   //  Serial.println(&timeinfo, "print - %A, %B %d %Y %H:%M:%S");
-
   //https://arduino.stackexchange.com/questions/52676/how-do-you-convert-a-formatted-print-statement-into-a-string-variable
-  char timeStringBuff[50];  //50 chars should be enough
+  char timeStringBuff[50];
+  // strftime(timeStringBuff, sizeof(timeStringBuff), "%A, %B %d %Y %H:%M:%S", &timeinfo);
   strftime(timeStringBuff, sizeof(timeStringBuff), "%H:%M:%S", &timeinfo);
-  //print like "const char*"
-  //  Serial.println(timeStringBuff);
-  //Optional: Construct String object
   String asString(timeStringBuff);
   return asString;
 }
