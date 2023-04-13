@@ -92,7 +92,8 @@ void smtpCallback(SMTP_Status status);
 
   /* Declare the message class */
 SMTP_Message message;
-
+/* Declare the session config data */
+ESP_Mail_Session session;
 //  Email end
 
 void IRAM_ATTR toggleButton1() {
@@ -191,8 +192,8 @@ void setup_email()
   /* Set the callback function to get the sending results */
   smtp.callback(smtpCallback);
 
-  /* Declare the session config data */
-  ESP_Mail_Session session;
+  // /* Declare the session config data */
+  // ESP_Mail_Session session;
 
   /* Set the session config */
   session.server.host_name = SMTP_HOST;
