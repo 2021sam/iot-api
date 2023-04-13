@@ -97,6 +97,7 @@ SMTP_Message message;
 
 void IRAM_ATTR toggleButton1() {
   Serial.println("Button 1 Pressed!");
+        send_email_alert();
   // tft.fillScreen(TFT_BLACK);
   // tft.setCursor(0, 30);
   // tft.drawLine(0, 35, 250, 35, TFT_BLUE);
@@ -109,6 +110,7 @@ void IRAM_ATTR toggleButton1() {
 
 void IRAM_ATTR toggleButton2() {
   Serial.println("Button 2 Pressed!");
+        send_email_alert();
   // tft.fillScreen(TFT_BLACK);
   // tft.setCursor(0, 30);
   // tft.drawLine(0, 35, 250, 35, TFT_BLUE);
@@ -164,6 +166,7 @@ void setup() {
   xTaskCreate(read_sensor_data, "Read sensor data", 2000, NULL, 2, NULL);
   xTaskCreate(post_sensor_data, "Post sensor data", 2000, NULL, 1, NULL);
   setup_routing();
+  setup_email();
 }
 
 void setup_routing() {
@@ -277,6 +280,11 @@ void read_motion(char *device, int PIN) {
 
 void send_email_alert()
 {
+
+    if (!smtp.connect(&session))
+    return;
+
+    
   /* Start sending Email and close the session */
   if (!MailClient.sendMail(&smtp, &message))
     Serial.println("Error sending Email, " + smtp.errorReason());
@@ -434,6 +442,9 @@ void get_motion()
     server.send(200, "application/json", buffer);
     jsonDocument_2.clear();  //  Reset data for iot client device
   }
+
+
+  send_email_alert();
 }
 
 
