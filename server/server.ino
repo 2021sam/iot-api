@@ -89,6 +89,10 @@ String get_time();
 SMTPSession smtp;
 /* Callback function to get the Email sending status */
 void smtpCallback(SMTP_Status status);
+
+  /* Declare the message class */
+SMTP_Message message;
+
 //  Email end
 
 void IRAM_ATTR toggleButton1() {
@@ -194,8 +198,8 @@ void setup_email()
   session.login.password = AUTHOR_PASSWORD;
   session.login.user_domain = "";
 
-  /* Declare the message class */
-  SMTP_Message message;
+  // /* Declare the message class */
+  // SMTP_Message message;
 
   /* Set the message headers */
   message.sender.name = "ESP";
@@ -341,7 +345,7 @@ void add_json_object_2(char *tag, float value, char *unit) {
     jsonDocument_2.remove(0);
   }
   JsonObject objt = jsonDocument_2.createNestedObject();
-  objt["time"] = git_time();
+  objt["time"] = get_time();
   objt["type"] = tag;
   objt["value"] = value;
   objt["unit"] = unit;
