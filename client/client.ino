@@ -14,15 +14,16 @@ TFT_eSPI tft = TFT_eSPI();
 #include <ArduinoJson.h>
 const char* ssid = "Hunter";
 const char* password = "saturday";
-//Your Domain name with URL path or IP address with path
 const char* serverName = "http://10.0.0.21/motion";
 const char* serverCAP = "http://10.0.0.124:9009/alive";
 // the following variables are unsigned longs because the time, measured in
 // milliseconds, will quickly become a bigger number than can be stored in an int.
 unsigned long lastTime = 0;
 unsigned long timerDelay = 2 * 1000;
+TaskHandle_t TaskHandle_1;
+TaskHandle_t TaskHandle_2;
 
-String sensorReadings;
+// String sensorReadings;
 int BUTTON_1 = 0;
 int BUTTON_2 = 14;
 void IRAM_ATTR toggleButton1();
@@ -49,8 +50,8 @@ void setup() {
 
   xTaskCreate(read_button_1, "Read Button 1", 2000, NULL, 1, NULL);
   xTaskCreate(read_button_2, "Read Button 2", 2000, NULL, 1, NULL);
-  xTaskCreate(check_motion, "Check IOT motion", 8000, NULL, 1, NULL);  // Needs to be above 4000
-  xTaskCreate(check_CAP, "Check Control Accounts Payable", 8000, NULL, 1, NULL);
+  xTaskCreate(check_motion, "Check IOT motion", 8000, NULL, 1, &TaskHandle_1);  // Needs to be above 4000
+  xTaskCreate(check_CAP, "Check Control Accounts Payable", 8000, NULL, 1, &TaskHandle_2);
 }
 
 void checkConnections() {
@@ -59,8 +60,7 @@ void checkConnections() {
   }
 }
 
-void setup_WiFi()
-{
+void setup_WiFi() {
   tft.fillScreen(TFT_RED);
   tft.setTextColor(TFT_BLACK, TFT_RED);
   tft.drawString("Joining Network", 60, 10, 4);
@@ -68,8 +68,7 @@ void setup_WiFi()
   Serial.println();
   Serial.print("Connecting to ");
   Serial.println(ssid);
-  while (WiFi.status() != WL_CONNECTED)
-  {
+  while (WiFi.status() != WL_CONNECTED) {
     WiFi.begin(ssid, password);  //  07/08/2021  WiFi crashed, may have been stuck in a loop.
     delay(5000);                 //  2000 is not enough but 3000 is.
   }
@@ -119,7 +118,8 @@ void read_button_2(void* parameter) {
 }
 
 void check_motion(void* parameter) {
-  while (!ALERT) {
+  while (true) {
+    // if (!ALERT){}
     int lapse = millis() - lastTime;
     Serial.print("lapse = ");
     Serial.println(lapse);
@@ -134,6 +134,7 @@ void check_motion(void* parameter) {
 
       for (JsonObject elem : doc.as<JsonArray>()) {
         ALERT = true;
+        // vTaskDelete( TaskHandle_2 );
         const char* time_c = elem["time"];
         String value_s = elem["value"];
         int value_i = elem["value"];
@@ -145,6 +146,8 @@ void check_motion(void* parameter) {
       }
       delay(5000);
     }
+
+
   }
   vTaskDelay(1000);
 }
@@ -174,34 +177,37 @@ String httpGETRequest(const char* serverName) {
 void loop() {}
 
 void check_CAP(void* parameter) {
-  while (!ALERT) {
-    checkConnections();
-    char HOST_NAME[] = "10.0.0.11";
-    bool alive = server_alive(HOST_NAME);
-    if (alive) {
-      tft.fillScreen(TFT_GREEN);
-      tft.setTextColor(TFT_BLUE, TFT_GREEN);
-      tft.drawString("CAP  ALIVE", 90, 30, 4);
-      // tft.drawString(value_s, 100, 90, 8);
+  while (true)
+  {
+    if (!ALERT) {
+      checkConnections();
+      char HOST_NAME[] = "10.0.0.11";
+      bool alive = server_alive(HOST_NAME);
+      if (alive) {
+        tft.fillScreen(TFT_GREEN);
+        tft.setTextColor(TFT_BLUE, TFT_GREEN);
+        tft.drawString("CAP  ALIVE", 90, 30, 4);
+        // tft.drawString(value_s, 100, 90, 8);
 
-      // String json = httpGETRequest(serverCAP);
-      // DynamicJsonDocument doc(1024);
-      // Serial.println(json);
-      // deserializeJson(doc, json);
-      // JsonObject obj = doc.as<JsonObject>();
-      // //  String alive_string = obj["alive"].as<String>();
-      // //  bool alive_bool = obj["alive"].as<bool>();
-      // String alive_string = obj["alive"];
-      // boolean alive_bool = obj["alive"];
-      // Serial.println(obj);
-      // Serial.print("alive=");
-      // Serial.println(alive_string);
-      // Serial.println(alive_bool);
-    } else {
-      ALERT = true;
-      tft.fillScreen(TFT_RED);
-      tft.setTextColor(TFT_BLUE, TFT_RED);
-      tft.drawString("CAP  OFF  LINE", 50, 30, 4);
+        // String json = httpGETRequest(serverCAP);
+        // DynamicJsonDocument doc(1024);
+        // Serial.println(json);
+        // deserializeJson(doc, json);
+        // JsonObject obj = doc.as<JsonObject>();
+        // //  String alive_string = obj["alive"].as<String>();
+        // //  bool alive_bool = obj["alive"].as<bool>();
+        // String alive_string = obj["alive"];
+        // boolean alive_bool = obj["alive"];
+        // Serial.println(obj);
+        // Serial.print("alive=");
+        // Serial.println(alive_string);
+        // Serial.println(alive_bool);
+      } else {
+        ALERT = true;
+        tft.fillScreen(TFT_RED);
+        tft.setTextColor(TFT_BLUE, TFT_RED);
+        tft.drawString("CAP  OFF  LINE", 50, 30, 4);
+      }
     }
     vTaskDelay(60 * 1000);
   }
