@@ -81,7 +81,7 @@ String get_time();
 #define SMTP_PORT 465
 /* The sign in credentials */
 #define AUTHOR_EMAIL "2020sentinel@gmail.com"
-#define AUTHOR_PASSWORD "aljpfxnecnapuntk"
+#define AUTHOR_PASSWORD "npelddudpedoleoz"
 /* Recipient's email*/
 #define RECIPIENT_EMAIL "5102465504@vtext.com"
 // #define RECIPIENT_EMAIL "7050592@gmail.com"
@@ -96,12 +96,12 @@ SMTP_Message message;
 // ESP_Mail_Session session;
 
 Session_Config config;
-int c = 0;
 bool ALERT = true;
 //  Email end
 
 void IRAM_ATTR toggleButton1() {
   Serial.println("Button 1 Pressed!");
+  ALERT = true;
         // send_email_alert();
   // tft.fillScreen(TFT_BLACK);
   // tft.setCursor(0, 30);
@@ -115,6 +115,7 @@ void IRAM_ATTR toggleButton1() {
 
 void IRAM_ATTR toggleButton2() {
   Serial.println("Button 2 Pressed!");
+  ALERT = false;
         // send_email_alert();
   // tft.fillScreen(TFT_BLACK);
   // tft.setCursor(0, 30);
@@ -205,10 +206,10 @@ void setup_email()
   /* Set the message headers */
   message.sender.name = F("ESP Mail");
   message.sender.email = AUTHOR_EMAIL;
-  message.subject = F("Test sending plain text Email");
+  message.subject = F("IOT 1 - Motion Alert");
   message.addRecipient(F("Someone"), RECIPIENT_EMAIL);
 
-  String textMsg = "This is simple plain text message";
+  String textMsg = "Motion Count = " + String(motion_count);
   message.text.content = textMsg;
 
   message.text.charSet = F("us-ascii");
@@ -272,12 +273,10 @@ void send_email_alert() {
   if (!ALERT)
     return;
 
-
   if (!smtp.connect(&config)) {
     ESP_MAIL_PRINTF("Connection error, Status Code: %d, Error Code: %d, Reason: %s", smtp.statusCode(), smtp.errorCode(), smtp.errorReason().c_str());
     return;
   }
-
 
   if (!smtp.isLoggedIn()) {
     Serial.println("\nNot yet logged in.");
@@ -288,19 +287,11 @@ void send_email_alert() {
       Serial.println("\nConnected with no Auth.");
   }
 
-
   Serial.println('send_email_alert');
   /* Start sending Email and close the session */
   if (!MailClient.sendMail(&smtp, &message))
     ESP_MAIL_PRINTF("Error, Status Code: %d, Error Code: %d, Reason: %s", smtp.statusCode(), smtp.errorCode(), smtp.errorReason().c_str());
 }
-
-
-
-
-
-
-
 
 
 
@@ -315,7 +306,10 @@ void getMenu() {
   html += "<a href='http://10.0.0.21/motion'>Motion Data</a><br>";
   html += "<a href='http://10.0.0.21/poll'>Polled Data</a><br>";
   html += "<a href='http://10.0.0.21/reset'>Reset</a><br>";
-  html += "<a href='http://10.0.0.21/alert'>Toggle SMS Alerts</a>";
+  html += "<a href='http://10.0.0.21/set_app_password?password=</a><br>";
+  html += "<a href='http://10.0.0.21/alert'>Toggle SMS Alerts: ALERT = ";
+  html += ALERT;
+  html += "</a>";
   html += "</body></html>";
   server.send(200, "text/html", html);
 }
@@ -438,12 +432,13 @@ void get_poll() {
 
 void get_motion()
 {
+  // For some reason, it keeps calling this function ?????????????????????????????????????????????????
   // Serial.println("Get Motion Times");
   StaticJsonDocument<64> filter;
   filter["type"] = "motion";
 
   int size = jsonDocument_2.size();
-  Serial.println(size);
+  // Serial.println(size);
   if (!size) {
     // Serial.println("NULL");
     server.send(200, "application/json", "{}");
@@ -497,8 +492,6 @@ String get_time() {
   String asString(timeStringBuff);
   return asString;
 }
-
-
 
 
 /* Callback function to get the Email sending status */
