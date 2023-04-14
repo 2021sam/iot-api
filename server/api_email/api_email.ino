@@ -93,12 +93,16 @@ void smtpCallback(SMTP_Status status);
   /* Declare the message class */
 SMTP_Message message;
 /* Declare the session config data */
-ESP_Mail_Session session;
+// ESP_Mail_Session session;
+
+Session_Config config;
+int c = 0;
+bool ALERT = true;
 //  Email end
 
 void IRAM_ATTR toggleButton1() {
   Serial.println("Button 1 Pressed!");
-        send_email_alert();
+        // send_email_alert();
   // tft.fillScreen(TFT_BLACK);
   // tft.setCursor(0, 30);
   // tft.drawLine(0, 35, 250, 35, TFT_BLUE);
@@ -111,7 +115,7 @@ void IRAM_ATTR toggleButton1() {
 
 void IRAM_ATTR toggleButton2() {
   Serial.println("Button 2 Pressed!");
-        send_email_alert();
+        // send_email_alert();
   // tft.fillScreen(TFT_BLACK);
   // tft.setCursor(0, 30);
   // tft.drawLine(0, 35, 250, 35, TFT_BLUE);
@@ -135,7 +139,7 @@ unsigned long last_time = 0;
 bool motion;
 int motion_count = 0;
 int motion_count_post = 0;
-int motion_threshold = 1;
+int motion_threshold = 100;
 unsigned long interval = 5000;  //  Allowed time to pass with no motion.
 int BUTTON_1 = 35;
 int BUTTON_2 = 0;
@@ -176,64 +180,41 @@ void setup_routing() {
   server.on("/motion", get_motion);
   server.on("/reset", resetData);
   server.on(F("/set"), HTTP_GET, getSettings);
+  server.on("/alert", toggle_alert);
   server.begin();
 }
 
-
+ 
 
 void setup_email()
 {
-  /** Enable the debug via Serial port
-   * none debug or 0
-   * basic debug or 1
-  */
+  MailClient.networkReconnect(true);
   smtp.debug(1);
-
-  /* Set the callback function to get the sending results */
   smtp.callback(smtpCallback);
-
-  // /* Declare the session config data */
-  // ESP_Mail_Session session;
-
+ 
   /* Set the session config */
-  session.server.host_name = SMTP_HOST;
-  session.server.port = SMTP_PORT;
-  session.login.email = AUTHOR_EMAIL;
-  session.login.password = AUTHOR_PASSWORD;
-  session.login.user_domain = "";
-
-  // /* Declare the message class */
-  // SMTP_Message message;
-
+  config.server.host_name = SMTP_HOST;
+  config.server.port = SMTP_PORT;
+  config.login.email = AUTHOR_EMAIL;
+  config.login.password = AUTHOR_PASSWORD;
+  config.login.user_domain = F("mydomain.net");
+  config.time.ntp_server = F("pool.ntp.org,time.nist.gov");
+  config.time.gmt_offset = 3;
+  config.time.day_light_offset = 0;
+ 
   /* Set the message headers */
-  message.sender.name = "ESP";
+  message.sender.name = F("ESP Mail");
   message.sender.email = AUTHOR_EMAIL;
-  message.subject = "ESP Test Email";
-  message.addRecipient("Sara", RECIPIENT_EMAIL);
+  message.subject = F("Test sending plain text Email");
+  message.addRecipient(F("Someone"), RECIPIENT_EMAIL);
 
-  /*Send HTML message*/
-  String htmlMsg = "<div style=\"color:#2f4468;\"><h1>Motion Detected!</h1><p>- Sent from ESP board</p></div>";
-  message.html.content = htmlMsg.c_str();
-  // message.html.content = htmlMsg.c_str();
-  message.text.charSet = "us-ascii";
-  message.html.transfer_encoding = Content_Transfer_Encoding::enc_7bit;
+  String textMsg = "This is simple plain text message";
+  message.text.content = textMsg;
 
-  /*
-  //Send raw text message
-  String textMsg = "Hello World! - Sent from ESP board";
-  message.text.content = textMsg.c_str();
-  message.text.charSet = "us-ascii";
+  message.text.charSet = F("us-ascii");
   message.text.transfer_encoding = Content_Transfer_Encoding::enc_7bit;
-  
   message.priority = esp_mail_smtp_priority::esp_mail_smtp_priority_low;
-  message.response.notify = esp_mail_smtp_notify_success | esp_mail_smtp_notify_failure | esp_mail_smtp_notify_delay;*/
-
-  /* Set the custom message header */
-  //message.addHeader("Message-ID: <abcde.fghij@gmail.com>");
-
-  // /* Connect to server with the session config */
-  // if (!smtp.connect(&session))
-  //   return;
+  message.addHeader(F("Message-ID: <abcde.fghij@gmail.com>"));
 }
 
 
@@ -261,7 +242,10 @@ void read_motion(char *device, int PIN) {
     if (motion_count == 0) {
       start_time = millis();
       // t.fill_screen( TFT_BLACK );
-      send_email_alert();
+      // Serial.println('Send Email Alert');
+      
+      // send_email_alert();
+      // delay(1000);
     }
     last_time = millis();
     //    t.lcd_display( 1, 0, t.fontsize, 100, String( last_time ) );
@@ -272,23 +256,53 @@ void read_motion(char *device, int PIN) {
     Serial.println(mt);
     // if ( motion_count >= motion_threshold )
     // {
+    //   motion_count = 0;
     //     // publish_message( device, String( motion_count ) );
     //     Serial.println("publish_message");
+    //     Serial.println("***************************************");
+    //     // send_email_alert();
+    //     // delay(10000);
     // }
   }
 }
 
 
-void send_email_alert()
-{
 
-    smtp.connect(&session);
-    delay(500);
-    
+void send_email_alert() {
+  if (!ALERT)
+    return;
+
+
+  if (!smtp.connect(&config)) {
+    ESP_MAIL_PRINTF("Connection error, Status Code: %d, Error Code: %d, Reason: %s", smtp.statusCode(), smtp.errorCode(), smtp.errorReason().c_str());
+    return;
+  }
+
+
+  if (!smtp.isLoggedIn()) {
+    Serial.println("\nNot yet logged in.");
+  } else {
+    if (smtp.isAuthenticated())
+      Serial.println("\nSuccessfully logged in.");
+    else
+      Serial.println("\nConnected with no Auth.");
+  }
+
+
+  Serial.println('send_email_alert');
   /* Start sending Email and close the session */
   if (!MailClient.sendMail(&smtp, &message))
-    Serial.println("Error sending Email, " + smtp.errorReason());
+    ESP_MAIL_PRINTF("Error, Status Code: %d, Error Code: %d, Reason: %s", smtp.statusCode(), smtp.errorCode(), smtp.errorReason().c_str());
 }
+
+
+
+
+
+
+
+
+
 
 void getMenu() {
   Serial.println("get Menu");
@@ -301,6 +315,7 @@ void getMenu() {
   html += "<a href='http://10.0.0.21/motion'>Motion Data</a><br>";
   html += "<a href='http://10.0.0.21/poll'>Polled Data</a><br>";
   html += "<a href='http://10.0.0.21/reset'>Reset</a><br>";
+  html += "<a href='http://10.0.0.21/alert'>Toggle SMS Alerts</a>";
   html += "</body></html>";
   server.send(200, "text/html", html);
 }
@@ -423,32 +438,47 @@ void get_poll() {
 
 void get_motion()
 {
-  Serial.println("Get Motion Times");
+  // Serial.println("Get Motion Times");
   StaticJsonDocument<64> filter;
   filter["type"] = "motion";
 
   int size = jsonDocument_2.size();
   Serial.println(size);
   if (!size) {
-    Serial.println("NULL");
+    // Serial.println("NULL");
     server.send(200, "application/json", "{}");
   }
 
-
   if (size)
   {
-    Serial.println("Not NULL");
+    // Serial.println("Not NULL");
     serializeJson(jsonDocument_2, buffer);
     server.send(200, "application/json", buffer);
     jsonDocument_2.clear();  //  Reset data for iot client device
   }
+}
 
 
-  send_email_alert();
+void toggle_alert(){
+  ALERT = !ALERT;
+
+  DynamicJsonDocument doc1(2048);
+  doc1["ALERT"] = ALERT;
+  // Serialize JSON document
+  String json;
+  serializeJson(doc1, json);
+  server.send(200, "application/json", json);
 }
 
 
 void loop() {
+  Serial.println(".");
+  if ( motion_count ){
+    motion_count = 0;
+    send_email_alert();
+    delay(10000);
+  }
+  delay(1000);
   server.handleClient();
 }
 
@@ -469,31 +499,42 @@ String get_time() {
 }
 
 
+
+
 /* Callback function to get the Email sending status */
-void smtpCallback(SMTP_Status status){
+void smtpCallback(SMTP_Status status) {
   /* Print the current status */
   Serial.println(status.info());
 
   /* Print the sending result */
-  if (status.success()){
+  if (status.success()) {
+    // ESP_MAIL_PRINTF used in the examples is for format printing via debug Serial port
+    // that works for all supported Arduino platform SDKs e.g. AVR, SAMD, ESP32 and ESP8266.
+    // In ESP8266 and ESP32, you can use Serial.printf directly.
+
     Serial.println("----------------");
     ESP_MAIL_PRINTF("Message sent success: %d\n", status.completedCount());
-    ESP_MAIL_PRINTF("Message sent failled: %d\n", status.failedCount());
+    ESP_MAIL_PRINTF("Message sent failed: %d\n", status.failedCount());
     Serial.println("----------------\n");
-    struct tm dt;
 
-    for (size_t i = 0; i < smtp.sendingResult.size(); i++){
+    for (size_t i = 0; i < smtp.sendingResult.size(); i++) {
       /* Get the result item */
       SMTP_Result result = smtp.sendingResult.getItem(i);
-      time_t ts = (time_t)result.timestamp;
-      localtime_r(&ts, &dt);
+
+      // In case, ESP32, ESP8266 and SAMD device, the timestamp get from result.timestamp should be valid if
+      // your device time was synched with NTP server.
+      // Other devices may show invalid timestamp as the device time was not set i.e. it will show Jan 1, 1970.
+      // You can call smtp.setSystemTime(xxx) to set device time manually. Where xxx is timestamp (seconds since Jan 1, 1970)
 
       ESP_MAIL_PRINTF("Message No: %d\n", i + 1);
       ESP_MAIL_PRINTF("Status: %s\n", result.completed ? "success" : "failed");
-      ESP_MAIL_PRINTF("Date/Time: %d/%d/%d %d:%d:%d\n", dt.tm_year + 1900, dt.tm_mon + 1, dt.tm_mday, dt.tm_hour, dt.tm_min, dt.tm_sec);
+      ESP_MAIL_PRINTF("Date/Time: %s\n", MailClient.Time.getDateTimeString(result.timestamp, "%B %d, %Y %H:%M:%S").c_str());
       ESP_MAIL_PRINTF("Recipient: %s\n", result.recipients.c_str());
       ESP_MAIL_PRINTF("Subject: %s\n", result.subject.c_str());
     }
     Serial.println("----------------\n");
+
+    // You need to clear sending result as the memory usage will grow up.
+    smtp.sendingResult.clear();
   }
 }
