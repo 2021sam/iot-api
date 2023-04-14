@@ -81,7 +81,8 @@ String get_time();
 #define SMTP_PORT 465
 /* The sign in credentials */
 #define AUTHOR_EMAIL "2020sentinel@gmail.com"
-#define AUTHOR_PASSWORD "npelddudpedoleoz"
+// #define AUTHOR_PASSWORD "npelddudpedoleoz"
+String AUTHOR_PASSWORD = "npelddudpedoleoz";
 /* Recipient's email*/
 #define RECIPIENT_EMAIL "5102465504@vtext.com"
 // #define RECIPIENT_EMAIL "7050592@gmail.com"
@@ -101,7 +102,9 @@ bool ALERT = true;
 
 void IRAM_ATTR toggleButton1() {
   Serial.println("Button 1 Pressed!");
+  Serial.println(AUTHOR_PASSWORD);
   ALERT = true;
+  
         // send_email_alert();
   // tft.fillScreen(TFT_BLACK);
   // tft.setCursor(0, 30);
@@ -181,6 +184,7 @@ void setup_routing() {
   server.on("/motion", get_motion);
   server.on("/reset", resetData);
   server.on(F("/set"), HTTP_GET, getSettings);
+  server.on(F("/set_password"), HTTP_GET, set_password);
   server.on("/alert", toggle_alert);
   server.begin();
 }
@@ -306,7 +310,7 @@ void getMenu() {
   html += "<a href='http://10.0.0.21/motion'>Motion Data</a><br>";
   html += "<a href='http://10.0.0.21/poll'>Polled Data</a><br>";
   html += "<a href='http://10.0.0.21/reset'>Reset</a><br>";
-  html += "<a href='http://10.0.0.21/set_app_password?password=</a><br>";
+  html += "<a href='http://10.0.0.21/set_password?password='>http://10.0.0.21/set_password=Set App Password</a><br>";
   html += "<a href='http://10.0.0.21/alert'>Toggle SMS Alerts: ALERT = ";
   html += ALERT;
   html += "</a>";
@@ -335,6 +339,32 @@ void getSettings() {
   //    }
   DynamicJsonDocument doc1(2048);
   doc1["set"] = "Great Success !";
+  // Serialize JSON document
+  String json;
+  serializeJson(doc1, json);
+  server.send(200, "application/json", json);
+}
+
+
+void set_password() {
+  Serial.println("Set Password()");
+  String message = "";
+  for (uint8_t i = 0; i < server.args(); i++) {
+    message += " " + server.argName(i) + ": " + server.arg(i) + "\n";
+    String name1 = server.argName(i);
+    //      String value1 = server.arg ( i );
+    if (name1.equals("password")) {
+      AUTHOR_PASSWORD = server.arg(i);
+      Serial.println(AUTHOR_PASSWORD);
+    }
+  }
+  Serial.println(message);
+  //    if (server.arg("interval")== "true")
+  //    {
+  //        response+= ",\"signalStrengh\": \""+String(WiFi.RSSI())+"\"";
+  //    }
+  DynamicJsonDocument doc1(2048);
+  doc1["password"] = AUTHOR_PASSWORD;
   // Serialize JSON document
   String json;
   serializeJson(doc1, json);
