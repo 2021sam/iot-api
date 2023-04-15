@@ -69,7 +69,7 @@ void resetData();
 void getTemperature();
 void getPressure();
 void getHumidity();
-void getSettings();
+void set();
 void setup_routing();
 void read_sensor_data(void *parameter);
 void read_motion(char *device, int PIN);
@@ -83,7 +83,6 @@ String get_time();
 #define AUTHOR_EMAIL "2020sentinel@gmail.com"
 // #define AUTHOR_PASSWORD "npelddudpedoleoz"
 String AUTHOR_PASSWORD = "npelddudpedoleoz";
-/* Recipient's email*/
 #define RECIPIENT_EMAIL "5102465504@vtext.com"
 // #define RECIPIENT_EMAIL "7050592@gmail.com"
 /* The SMTP Session object used for Email sending */
@@ -91,19 +90,19 @@ SMTPSession smtp;
 /* Callback function to get the Email sending status */
 void smtpCallback(SMTP_Status status);
 
-  /* Declare the message class */
 SMTP_Message message;
-/* Declare the session config data */
-// ESP_Mail_Session session;
-
 Session_Config config;
 bool ALERT = true;
 //  Email end
 
 void IRAM_ATTR toggleButton1() {
   Serial.println("Button 1 Pressed!");
+  Serial.print("PASSWORD=");
   Serial.println(AUTHOR_PASSWORD);
+
   ALERT = true;
+  Serial.print("ALERT=");
+  Serial.println(ALERT);
   
         // send_email_alert();
   // tft.fillScreen(TFT_BLACK);
@@ -183,12 +182,10 @@ void setup_routing() {
   server.on("/poll", get_poll);
   server.on("/motion", get_motion);
   server.on("/reset", resetData);
-  server.on(F("/set"), HTTP_GET, getSettings);
-  server.on(F("/set_password"), HTTP_GET, set_password);
+  server.on(F("/set"), HTTP_GET, set);
   server.on("/alert", toggle_alert);
   server.begin();
 }
-
  
 
 void setup_email()
@@ -229,7 +226,8 @@ void read_sensors() {
 }
 
 //  Read Boolean Motion
-void read_motion(char *device, int PIN) {
+void read_motion(char *device, int PIN)
+{
   // Serial.print("motion_count = ");
   if (motion_count > 0) {
     int lapse = millis() - last_time;
@@ -259,29 +257,19 @@ void read_motion(char *device, int PIN) {
     String mt = "Motion=" + String(motion_count);
     // t.lcd_display( 1, 30, t.fontsize, 0, mt );
     Serial.println(mt);
-    // if ( motion_count >= motion_threshold )
-    // {
-    //   motion_count = 0;
-    //     // publish_message( device, String( motion_count ) );
-    //     Serial.println("publish_message");
-    //     Serial.println("***************************************");
-    //     // send_email_alert();
-    //     // delay(10000);
-    // }
   }
 }
-
 
 
 void send_email_alert() {
   if (!ALERT)
     return;
-
+  Serial.println("1");
   if (!smtp.connect(&config)) {
     ESP_MAIL_PRINTF("Connection error, Status Code: %d, Error Code: %d, Reason: %s", smtp.statusCode(), smtp.errorCode(), smtp.errorReason().c_str());
     return;
   }
-
+  Serial.println("2");
   if (!smtp.isLoggedIn()) {
     Serial.println("\nNot yet logged in.");
   } else {
@@ -290,13 +278,13 @@ void send_email_alert() {
     else
       Serial.println("\nConnected with no Auth.");
   }
-
+  Serial.println("3");
+  Serial.println(AUTHOR_PASSWORD);
   Serial.println('send_email_alert');
   /* Start sending Email and close the session */
   if (!MailClient.sendMail(&smtp, &message))
     ESP_MAIL_PRINTF("Error, Status Code: %d, Error Code: %d, Reason: %s", smtp.statusCode(), smtp.errorCode(), smtp.errorReason().c_str());
 }
-
 
 
 void getMenu() {
@@ -310,7 +298,7 @@ void getMenu() {
   html += "<a href='http://10.0.0.21/motion'>Motion Data</a><br>";
   html += "<a href='http://10.0.0.21/poll'>Polled Data</a><br>";
   html += "<a href='http://10.0.0.21/reset'>Reset</a><br>";
-  html += "<a href='http://10.0.0.21/set_password?password='>http://10.0.0.21/set_password=Set App Password</a><br>";
+  html += "<a href='http://10.0.0.21/set?password='>http://10.0.0.21/set=Set App Password</a><br>";
   html += "<a href='http://10.0.0.21/alert'>Toggle SMS Alerts: ALERT = ";
   html += ALERT;
   html += "</a>";
@@ -319,53 +307,34 @@ void getMenu() {
 }
 
 
-void getSettings() {
-  Serial.println("getSettings()");
+void set()
+{
+  Serial.println("set");
   // Serial.println( server.args() );
   String message = "";
-  for (uint8_t i = 0; i < server.args(); i++) {
+  String key = "";
+  String value = "";
+    for (uint8_t i = 0; i < server.args(); i++)
+  {
     message += " " + server.argName(i) + ": " + server.arg(i) + "\n";
-    String name1 = server.argName(i);
-    //      String value1 = server.arg ( i );
-    if (name1.equals("interval")) {
+    key = server.argName(i);
+    value = server.arg(i);
+    if (key.equals("interval"))
+    {
       SAMPLE_INTERVAL = server.arg(i).toInt();
       Serial.println(SAMPLE_INTERVAL);
     }
-  }
-  Serial.println(message);
-  //    if (server.arg("interval")== "true")
-  //    {
-  //        response+= ",\"signalStrengh\": \""+String(WiFi.RSSI())+"\"";
-  //    }
-  DynamicJsonDocument doc1(2048);
-  doc1["set"] = "Great Success !";
-  // Serialize JSON document
-  String json;
-  serializeJson(doc1, json);
-  server.send(200, "application/json", json);
-}
 
-
-void set_password() {
-  Serial.println("Set Password()");
-  String message = "";
-  for (uint8_t i = 0; i < server.args(); i++) {
-    message += " " + server.argName(i) + ": " + server.arg(i) + "\n";
-    String name1 = server.argName(i);
-    //      String value1 = server.arg ( i );
-    if (name1.equals("password")) {
+  if (key.equals("password")){
       AUTHOR_PASSWORD = server.arg(i);
-      Serial.println(AUTHOR_PASSWORD);
-    }
+      config.login.password = AUTHOR_PASSWORD;
+      Serial.println(AUTHOR_PASSWORD);    
+  }
   }
   Serial.println(message);
-  //    if (server.arg("interval")== "true")
-  //    {
-  //        response+= ",\"signalStrengh\": \""+String(WiFi.RSSI())+"\"";
-  //    }
+
   DynamicJsonDocument doc1(2048);
-  doc1["password"] = AUTHOR_PASSWORD;
-  // Serialize JSON document
+  doc1[key] = value;
   String json;
   serializeJson(doc1, json);
   server.send(200, "application/json", json);
@@ -486,10 +455,8 @@ void get_motion()
 
 void toggle_alert(){
   ALERT = !ALERT;
-
   DynamicJsonDocument doc1(2048);
   doc1["ALERT"] = ALERT;
-  // Serialize JSON document
   String json;
   serializeJson(doc1, json);
   server.send(200, "application/json", json);
