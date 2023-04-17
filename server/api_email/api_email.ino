@@ -79,12 +79,9 @@ String get_time();
 //  Email
 #define SMTP_HOST "smtp.gmail.com"
 #define SMTP_PORT 465
-/* The sign in credentials */
-#define AUTHOR_EMAIL "2020sentinel@gmail.com"
-// #define AUTHOR_PASSWORD "npelddudpedoleoz"
-String AUTHOR_PASSWORD = "npelddudpedoleoz";
-#define RECIPIENT_EMAIL "5102465504@vtext.com"
-// #define RECIPIENT_EMAIL "7050592@gmail.com"
+#define AUTHOR_EMAIL "2016sentinel@gmail.com"
+#define AUTHOR_PASSWORD "npelddudpedoleoz"
+#define RECIPIENT_EMAIL "9252465504@vtext.com"
 /* The SMTP Session object used for Email sending */
 SMTPSession smtp;
 /* Callback function to get the Email sending status */
@@ -210,7 +207,8 @@ void setup_email()
   message.subject = F("IOT 1 - Motion Alert");
   message.addRecipient(F("Someone"), RECIPIENT_EMAIL);
 
-  String textMsg = "Motion Count = " + String(motion_count);
+  // String textMsg = "Motion Count = " + String(motion_count);
+  String textMsg = "http://10.0.0.21";
   message.text.content = textMsg;
 
   message.text.charSet = F("us-ascii");
@@ -218,7 +216,6 @@ void setup_email()
   message.priority = esp_mail_smtp_priority::esp_mail_smtp_priority_low;
   message.addHeader(F("Message-ID: <abcde.fghij@gmail.com>"));
 }
-
 
 
 void read_sensors() {
@@ -492,7 +489,8 @@ String get_time() {
 
 
 /* Callback function to get the Email sending status */
-void smtpCallback(SMTP_Status status) {
+void smtpCallback(SMTP_Status status)
+{
   /* Print the current status */
   Serial.println(status.info());
 
@@ -507,7 +505,8 @@ void smtpCallback(SMTP_Status status) {
     ESP_MAIL_PRINTF("Message sent failed: %d\n", status.failedCount());
     Serial.println("----------------\n");
 
-    for (size_t i = 0; i < smtp.sendingResult.size(); i++) {
+    for (size_t i = 0; i < smtp.sendingResult.size(); i++)
+    {
       /* Get the result item */
       SMTP_Result result = smtp.sendingResult.getItem(i);
 
