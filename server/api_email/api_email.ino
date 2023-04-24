@@ -40,8 +40,8 @@ const int daylightOffset_sec = 3600;
 #define BUTTON2PIN 0
 
 // Adafruit_BME680 bme; // I2C
-const char *SSID = "Hunter";
-const char *PWD = "saturday";
+const char *SSID = "NETGEAR_11N";
+const char *PWD = "CUBINwife";
 const int red_pin = 5;
 const int green_pin = 18;
 const int blue_pin = 19;
@@ -80,7 +80,7 @@ String get_time();
 #define SMTP_HOST "smtp.gmail.com"
 #define SMTP_PORT 465
 #define AUTHOR_EMAIL "2016sentinel@gmail.com"
-#define AUTHOR_PASSWORD "npelddudpedoleoz"
+String AUTHOR_PASSWORD = "plrsddugqqbkezpx";
 #define RECIPIENT_EMAIL "9252465504@vtext.com"
 /* The SMTP Session object used for Email sending */
 SMTPSession smtp;
@@ -126,7 +126,10 @@ void IRAM_ATTR toggleButton2() {
   // tft.print("Pressed!");
 }
 
-int ENFORCER = 27;  // PIN=27  Seco-Larm E-931-S35RRQ Enforcer Indoor/Outdoor Wall Mounted
+int ENFORCER = 27;  //  Seco-Larm E-931-S35RRQ Enforcer Indoor/Outdoor Wall Mounted
+                    //  ESP32 Pin 27     -> White
+                    //  ESP32 Pin Ground -> Grey  -> Normally Closed (NC)
+
 // void IRAM_ATTR interrupt_motion_detected() {
 //   Serial.println("Interrupt - Motion Detected");
 //   // read_motion( "/enforcer", ENFORCER );
