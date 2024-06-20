@@ -20,6 +20,7 @@
 
 #include <TFT_eSPI.h>
 TFT_eSPI tft = TFT_eSPI();
+#include <SPI.h>
 //https://randomnerdtutorials.com/esp32-date-time-ntp-client-server-arduino/
 //https://www.survivingwithandroid.com/esp32-rest-api-esp32-api-server/
 //https://www.mischianti.org/2020/05/24/rest-server-on-esp8266-and-esp32-get-and-json-formatter-part-2/
@@ -123,6 +124,12 @@ bool motion;
 int motion_count = 0;
 int motion_count_post = 0;
 int motion_threshold = 1;
+
+int temperature = 0;
+int humidity = 0;
+int gas = 0;
+
+
 unsigned long interval = 5000;  //  Allowed time to pass with no motion.
 int BUTTON_1 = 35;
 int BUTTON_2 = 0;
@@ -171,8 +178,6 @@ void setup() {
     while (true); // Stop here if no internet access
   }
 
-
-
   configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
 
   // Wait for time to be set
@@ -194,6 +199,7 @@ void setup_routing() {
   server.on("/", getMenu);
   server.on("/poll", get_poll);
   server.on("/motion", get_motion);
+  server.on("/t", get_temperature);
   server.on("/reset", resetData);
   server.on(F("/set"), HTTP_GET, getSettings);
   server.begin();
@@ -403,7 +409,7 @@ void get_motion() {
 
 
 void loop() {
-  bme_loop();
+  loop_bme();
   server.handleClient();
 }
 
@@ -467,7 +473,7 @@ Adafruit_BME680 bme; // I2C
 //Adafruit_BME680 bme(BME_CS); // hardware SPI
 //Adafruit_BME680 bme(BME_CS, BME_MOSI, BME_MISO, BME_SCK);
 
-void bme_setup() {
+void setup_bme() {
   Serial.begin(115200);
   while (!Serial);
   Serial.println(F("BME680 async test"));
@@ -485,7 +491,7 @@ void bme_setup() {
   bme.setGasHeater(320, 150); // 320*C for 150 ms
 }
 
-void bme_loop() {
+void loop_bme() {
   // Tell BME680 to begin measurement.
   unsigned long endTime = bme.beginReading();
   if (endTime == 0) {
@@ -536,5 +542,19 @@ void bme_loop() {
   delay(2000);
 }
 
+void get_temperature()
+{
+  unsigned long endTime = bme.beginReading();
+  if (endTime == 0)
+  {
+    Serial.println(F("Failed to begin reading bme680:("));
+    return;
+  }
+  delay(50);
+  if (!bme.endReading()){
+    Serial.println(F("Failed to complete reading BME680:("));
+  }
 
-
+  temperature = int(bme.temperature);
+  return temperature;
+}
