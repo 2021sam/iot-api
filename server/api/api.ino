@@ -139,15 +139,28 @@ void setup() {
 
   Serial.begin(115200);
   // while (!Serial);
-  Serial.print("Connecting to Wi-Fi");
+  Serial.print("Connecting to Wi-Fi...");
   WiFi.begin(SSID, PWD);
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(5000);
+  // while (WiFi.status() != WL_CONNECTED) {
+  //   delay(5000);
+  //   }
+
+  unsigned long startAttemptTime = millis();
+  while (WiFi.status() != WL_CONNECTED && millis() - startAttemptTime < 30000) {
+      Serial.print(".");
+      delay(500);
     }
 
-  configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
+
+  if (WiFi.status() != WL_CONNECTED) {
+    Serial.println("Failed to connect to Wi-Fi");
+    while (true); // Stop here if unable to connect
+  }
   Serial.print("Connected! IP Address: ");
   Serial.println(WiFi.localIP());
+
+  configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
+
   xTaskCreate(read_sensor_data, "Read sensor data", 2000, NULL, 2, NULL);
   xTaskCreate(post_sensor_data, "Post sensor data", 2000, NULL, 1, NULL);
   setup_routing();
