@@ -11,19 +11,26 @@
 //    Decouple checking sensor & posting interval.
 //    Dual docs
 
+
+#include <WiFi.h>
+#include <FS.h>
+#include "time.h"
+
+
 #include <TFT_eSPI.h>
 TFT_eSPI tft = TFT_eSPI();
 //https://randomnerdtutorials.com/esp32-date-time-ntp-client-server-arduino/
 //https://www.survivingwithandroid.com/esp32-rest-api-esp32-api-server/
 //https://www.mischianti.org/2020/05/24/rest-server-on-esp8266-and-esp32-get-and-json-formatter-part-2/
 #include <Arduino.h>
-#include <WiFi.h>
+// #include <WiFi.h>
+// #include <FS.h>
 #include <WebServer.h>
 #include <ArduinoJson.h>
 #include <Wire.h>
 // #include <Adafruit_Sensor.h>
 // #include <Adafruit_BME680.h>
-#include "time.h"
+// #include "time.h"
 const char *ntpServer = "pool.ntp.org";
 //const long  gmtOffset_sec = 3600 * 4;
 const long gmtOffset_sec = 3600 * -8;
@@ -39,7 +46,7 @@ const int daylightOffset_sec = 3600;
 #define BUTTON2PIN 0
 
 // Adafruit_BME680 bme; // I2C
-const char *SSID = "Hunter";
+const char *SSID = "IOT";
 const char *PWD = "saturday";
 const int red_pin = 5;
 const int green_pin = 18;
@@ -125,10 +132,10 @@ void setup() {
   pinMode(BUTTON2PIN, INPUT);
   attachInterrupt(BUTTON1PIN, toggleButton1, FALLING);
   attachInterrupt(BUTTON2PIN, toggleButton2, FALLING);
-  if (ENFORCER) {
-    pinMode(ENFORCER, INPUT_PULLUP);  // Enforcer works beautifully with a INPUT_PULLUP
-                                      // attachInterrupt(ENFORCER, interrupt_motion_detected, FALLING );
-  }
+  // if (ENFORCER) {
+  //   pinMode(ENFORCER, INPUT_PULLUP);  // Enforcer works beautifully with a INPUT_PULLUP
+  //                                     // attachInterrupt(ENFORCER, interrupt_motion_detected, FALLING );
+  // }
 
   Serial.begin(115200);
   // while (!Serial);
@@ -259,7 +266,7 @@ void add_json_object_2(char *tag, float value, char *unit) {
     jsonDocument_2.remove(0);
   }
   JsonObject objt = jsonDocument_2.createNestedObject();
-  objt["time"] = git_time();
+  objt["time"] = get_time();
   objt["type"] = tag;
   objt["value"] = value;
   objt["unit"] = unit;
