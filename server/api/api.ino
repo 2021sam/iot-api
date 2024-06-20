@@ -14,6 +14,7 @@
 
 #include <WiFi.h>
 #include <FS.h>
+#include <HTTPClient.h>
 #include "time.h"
 
 
@@ -159,7 +160,27 @@ void setup() {
   Serial.print("Connected! IP Address: ");
   Serial.println(WiFi.localIP());
 
+
+  // Check internet access
+  if (checkInternetAccess()) {
+    Serial.println("Internet access verified");
+  } else {
+    Serial.println("No internet access");
+    while (true); // Stop here if no internet access
+  }
+
+
+
   configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
+
+  // Wait for time to be set
+  struct tm timeinfo;
+  if (!getLocalTime(&timeinfo, 10000)) {  // Increase timeout to 10 seconds
+    Serial.println("Failed to obtain time");
+    return;
+  }
+  Serial.println(&timeinfo, "Time set: %A, %B %d %Y %H:%M:%S");
+
 
   xTaskCreate(read_sensor_data, "Read sensor data", 2000, NULL, 2, NULL);
   xTaskCreate(post_sensor_data, "Post sensor data", 2000, NULL, 1, NULL);
@@ -174,6 +195,17 @@ void setup_routing() {
   server.on(F("/set"), HTTP_GET, getSettings);
   server.begin();
 }
+
+
+bool checkInternetAccess() {
+  HTTPClient http;
+  http.begin("http://google.com");  // URL for checking internet access
+  int httpCode = http.GET();
+  http.end();
+  return httpCode > 0;
+}
+
+
 
 void read_sensors() {
   read_motion("/motion", ENFORCER);
