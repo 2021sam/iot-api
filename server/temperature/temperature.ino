@@ -7,7 +7,7 @@
 
 // Wi-Fi credentials
 const char* ssid = "IOT";
-const char* password = "saturday";
+const char* password = "password";
 const char* serverIP = "http://192.168.1.100:5000/data";  // Optional server endpoint
 
 TFT_eSPI tft = TFT_eSPI();
@@ -77,8 +77,8 @@ void readSensorData(float& temperature, float& humidity, float& gas, float& alti
 
 void handleRoot() {
   String html = "<html><body><h1>ESP32 Sensor Server</h1><ul>";
-  html += "<li><a href=\"/temp\">Temperature & Humidity</a></li>";
-  html += "<li><a href=\"/sensor_data\">All Sensor Data</a></li>";
+  html += "<li><a href=\"/temp\">HTML Sensor Data</a></li>";
+  html += "<li><a href=\"/sensor_data\">Json Sensor Data</a></li>";
   html += "</ul></body></html>";
   server.send(200, "text/html", html);
 }
