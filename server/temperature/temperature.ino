@@ -20,16 +20,14 @@ volatile bool refreshData = false;
 volatile bool refreshDisplay = false;
 
 void IRAM_ATTR handleButton1() {
-  Serial.println("Button 1");
+  Serial.println("Button 1 pressed");
   refreshData = true;
-
 }
 
 void IRAM_ATTR handleButton2() {
-  Serial.println("Button 2");
+  Serial.println("Button 2 pressed");
   refreshDisplay = true;
 }
-
 
 void tftPrint(String message) {
   tft.fillScreen(TFT_BLACK);
@@ -54,7 +52,6 @@ void tftPrint(String message) {
   delay(1000);
 }
 
-
 void setup() {
   Serial.begin(115200);
 
@@ -62,7 +59,6 @@ void setup() {
   pinMode(button2Pin, INPUT_PULLUP);
   attachInterrupt(button1Pin, handleButton1, FALLING);
   attachInterrupt(button2Pin, handleButton2, FALLING);
-
 
   tft.begin();
   tft.setRotation(1);
@@ -125,7 +121,7 @@ void displaySensorData() {
 
   // Display temperature
   String tempStr = String(temperature, 1) + "C";
-  tftPrint("Temp: " + tempStr);
+  tftPrint("Temperature: " + tempStr);
 
   // Display humidity
   String humStr = String(humidity, 1) + "%";
@@ -158,10 +154,10 @@ void setupServerEndpoints() {
   server.on("/", HTTP_GET, [](){
     String html = "<html><body>";
     html += "<h1>BME680 Sensor Data</h1>";
-    html += "<p>Button Instructions:</p>";
+    html += "<p><strong>Button Instructions:</strong></p>";
     html += "<ul>";
-    html += "<li>Press Button 1 for specific action.</li>";
-    html += "<li>Press Button 2 for another action.</li>";
+    html += "<li>Press Button 1 to refresh sensor data.</li>";
+    html += "<li>Press Button 2 to update the display.</li>";
     html += "</ul>";
     html += "<h2>Options:</h2>";
     html += "<ul>";
