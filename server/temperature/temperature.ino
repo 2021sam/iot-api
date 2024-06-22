@@ -154,15 +154,15 @@ void setupServerEndpoints() {
   server.on("/", HTTP_GET, [](){
     String html = "<html><body>";
     html += "<h1>BME680 Sensor Data</h1>";
+    html += "<h2>Endpoints:</h2>";
+    html += "<ul>";
+    html += "<li><a href=\"/html\">HTML BME680 data</a></li>";
+    html += "<li><a href=\"/json\">JSON BME680 data</a></li>";
+    html += "</ul>";
     html += "<p><strong>Button Instructions:</strong></p>";
     html += "<ul>";
     html += "<li>Press Button 1 to refresh sensor data.</li>";
     html += "<li>Press Button 2 to update the display.</li>";
-    html += "</ul>";
-    html += "<h2>Options:</h2>";
-    html += "<ul>";
-    html += "<li><a href=\"/html\">HTML BME680 data</a></li>";
-    html += "<li><a href=\"/json\">JSON BME680 data</a></li>";
     html += "</ul>";
     html += "</body></html>";
     server.send(200, "text/html", html);
