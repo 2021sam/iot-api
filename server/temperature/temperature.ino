@@ -1,3 +1,31 @@
+/**
+ * ESP32 BME680 Sensor Server with TFT Display
+ * 
+ * This program sets up an ESP32 to read data from a BME680 sensor and 
+ * display the temperature, humidity, and gas resistance on a TFT screen. 
+ * It also sets up a web server to serve the sensor data in both HTML and JSON formats.
+ * 
+ * Button 1: Refresh sensor data
+ * Button 2: Update display
+ * 
+ * Wi-Fi credentials:
+ *   SSID: IOT
+ *   Password: password
+ * 
+ * Server Endpoints:
+ *   - /html : Display sensor data in HTML format
+ *   - /json : Display sensor data in JSON format
+ * 
+ * Hardware Connections:
+ *   - Button 1: GPIO 0
+ *   - Button 2: GPIO 35
+ *   - BME680: I2C
+ *   - TFT: SPI
+ * 
+ * Author: Sam Portillo
+ * Date: 2024-06-21
+ */
+
 #include <WiFi.h>
 #include <WebServer.h>
 #include <TFT_eSPI.h>
