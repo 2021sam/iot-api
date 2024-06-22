@@ -197,6 +197,7 @@ void setupServerEndpoints() {
   });
 
   server.on("/html", HTTP_GET, [](){
+      refreshSensorData(); // Refresh sensor data before generating the HTML response
       float temperatureC = bme.temperature;
       float temperatureF = temperatureC * 1.8 + 32.0;
       float humidity = bme.humidity;
@@ -213,6 +214,7 @@ void setupServerEndpoints() {
   });
 
   server.on("/json", HTTP_GET, [](){
+    refreshSensorData(); // Refresh sensor data before generating the HTML response
     String json = "{";
     json += "\"temperature\": " + String(bme.temperature, 1) + ",";
     json += "\"humidity\": " + String(bme.humidity, 1) + ",";
