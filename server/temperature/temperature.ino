@@ -1,6 +1,6 @@
 /**
  * ESP32 BME680 Sensor Server with TFT Display
- * 
+ * LilyGo T-Display S2
  * This program sets up an ESP32 to read data from a BME680 sensor and 
  * display the temperature, humidity, and gas resistance on a TFT screen. 
  * It also sets up a web server to serve the sensor data in both HTML and JSON formats.
@@ -34,7 +34,7 @@
 
 // Wi-Fi credentials
 const char* ssid = "IOT";
-const char* password = "password";
+const char* password = "pass";
 
 TFT_eSPI tft = TFT_eSPI();
 WebServer server(80);
